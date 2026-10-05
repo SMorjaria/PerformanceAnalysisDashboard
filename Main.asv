@@ -1,0 +1,325 @@
+
+%% ============================================================
+%  VEHICLE PERFORMANCE SETUP & SENSITIVITY TOOL
+%
+%  Stage 1 - Vehicle & Setup Architecture
+%  ============================================================
+
+clear;
+clc;
+close all;
+
+
+%% ============================================================
+%  PROJECT INITIALISATION
+%  ============================================================
+
+ProjectRoot = fileparts(mfilename('fullpath'));
+
+addpath(fullfile(ProjectRoot,'Functions'));
+addpath(fullfile(ProjectRoot,'Models'));
+addpath(fullfile(ProjectRoot,'Studies'));
+addpath(fullfile(ProjectRoot,'Vehicle'));
+
+rehash;
+
+
+%% ============================================================
+%  1. CREATE MODEL INPUTS
+%  ============================================================
+
+Constants = createConstants();
+
+Vehicle = createVehicle();
+
+Setup = createSetup();
+
+
+%% ============================================================
+%  VEHICLE PERFORMANCE SETUP & SENSITIVITY TOOL
+%
+%  Stage 1 - Vehicle & Setup Architecture
+%
+% ============================================================
+
+clear;
+clc;
+close all;
+
+
+%% ============================================================
+%  ADD PROJECT FUNCTIONS TO MATLAB PATH
+%  ============================================================
+
+addpath('Functions');
+
+
+%% ============================================================
+%% ============================================================
+%  1. CREATE CONSTANTS
+%  ============================================================
+
+Constants = createConstants();
+
+
+%% ============================================================
+%  2. SELECT VEHICLE / SETUP INPUTS
+%  ============================================================
+
+[Vehicle, Setup] = selectInputMode();
+%% ============================================================
+%  3. CREATE OPERATING CONDITIONS
+%  ============================================================
+
+Operating = selectOperatingConditions(Constants);
+%% ============================================================
+%  TYRE DEFINITION
+%  ============================================================
+
+Tyre = createTyre();
+%% ============================================================
+%  3. VALIDATE INPUTS
+%  ============================================================
+
+validateVehicle(Vehicle);
+validateSetup(Setup);
+
+
+%% ============================================================
+%  4. CALCULATE DERIVED PARAMETERS
+%  ============================================================
+Derived = calculateDerivedParameters( ...
+    Vehicle, ...
+    Setup, ...
+    Operating, ...
+    Constants);
+%% ============================================================
+%  CALCULATE LONGITUDINAL LOAD TRANSFER
+%  ============================================================
+
+LoadTransfer = calculateLongitudinalLoadTransfer( ...
+    Vehicle, ...
+    Operating, ...
+    Derived);
+
+%% ============================================================
+%  LATERAL LOAD TRANSFER
+%  ============================================================
+
+Lateral = calculateLateralLoadTransfer( ...
+    Vehicle, ...
+    Setup, ...
+    Operating, ...
+    Derived);
+
+%% ============================================================
+%  COMBINED FOUR-CORNER TYRE LOADS
+%  ============================================================
+
+TyreLoads = calculateCombinedTyreLoads( ...
+    Vehicle, ...
+    Operating, ...
+    Derived, ...
+    LoadTransfer, ...
+    Lateral);
+
+%% ============================================================
+%  5. DISPLAY VEHICLE SUMMARY
+%  ============================================================
+
+displayVehicleSummary( ...
+    Vehicle, Setup, Derived);
+
+
+%% ============================================================
+%  6. VEHICLE VISUALISATION
+%  ============================================================
+
+plotVehicleOverview( ...
+    Vehicle, Setup, Derived);
+
+
+%% ============================================================
+%  DISPLAY LONGITUDINAL LOAD TRANSFER
+%  ============================================================
+
+fprintf('\n');
+fprintf('============================================\n');
+fprintf('     LONGITUDINAL LOAD TRANSFER\n');
+fprintf('============================================\n');
+
+fprintf('Longitudinal Acceleration : %+.2f g\n', ...
+    Operating.ax / Constants.g);
+
+fprintf('Load Transfer             : %+.1f N\n', ...
+    LoadTransfer.longitudinal);
+
+fprintf('\n');
+
+fprintf('Front Axle Load           : %.1f N\n', ...
+    LoadTransfer.frontAxle);
+
+fprintf('Rear Axle Load            : %.1f N\n', ...
+    LoadTransfer.rearAxle);
+
+fprintf('\n');
+
+fprintf('FL Tyre Load              : %.1f N\n', ...
+    LoadTransfer.FL);
+
+fprintf('FR Tyre Load              : %.1f N\n', ...
+    LoadTransfer.FR);
+
+fprintf('RL Tyre Load              : %.1f N\n', ...
+    LoadTransfer.RL);
+
+fprintf('RR Tyre Load              : %.1f N\n', ...
+    LoadTransfer.RR);
+
+fprintf('\n');
+
+fprintf('Total Vertical Load       : %.1f N\n', ...
+    LoadTransfer.total);
+
+fprintf('Load Conservation Error   : %.6f N\n', ...
+    LoadTransfer.loadError);
+
+%% ============================================================
+%  DISPLAY LATERAL LOAD TRANSFER
+%  ============================================================
+
+fprintf('\n');
+fprintf('============================================\n');
+fprintf('        LATERAL LOAD TRANSFER\n');
+fprintf('============================================\n');
+
+fprintf('Lateral Acceleration       : %+.2f g\n', ...
+    Operating.ay / Constants.g);
+
+fprintf('\n');
+
+fprintf('Front Roll Distribution    : %.1f %%\n', ...
+    Lateral.frontRollStiffnessDistribution * 100);
+
+fprintf('Rear Roll Distribution     : %.1f %%\n', ...
+    Lateral.rearRollStiffnessDistribution * 100);
+
+fprintf('\n');
+
+fprintf('Total Lateral Transfer     : %+.1f N\n', ...
+    Lateral.totalLoadTransfer);
+
+fprintf('Front Transfer             : %+.1f N\n', ...
+    Lateral.frontLoadTransfer);
+
+fprintf('Rear Transfer              : %+.1f N\n', ...
+    Lateral.rearLoadTransfer);
+
+fprintf('\n');
+
+fprintf('FL Tyre Load               : %.1f N\n', ...
+    Lateral.FL);
+
+fprintf('FR Tyre Load               : %.1f N\n', ...
+    Lateral.FR);
+
+fprintf('RL Tyre Load               : %.1f N\n', ...
+    Lateral.RL);
+
+fprintf('RR Tyre Load               : %.1f N\n', ...
+    Lateral.RR);
+
+fprintf('\n');
+
+fprintf('Total Vertical Load        : %.1f N\n', ...
+    Lateral.total);
+
+fprintf('Load Conservation Error    : %.6f N\n', ...
+    Lateral.loadError);
+
+%% ============================================================
+%  DISPLAY COMBINED TYRE LOADS
+%  ============================================================
+
+displayTyreLoads( ...
+    TyreLoads, ...
+    Operating, ...
+    Constants);
+
+%% ============================================================
+%  TYRE PERFORMANCE
+%  ============================================================
+
+TyrePerformance = calculateTyrePerformance( ...
+    TyreLoads, ...
+    Tyre);
+%% ============================================================
+%  DISPLAY TYRE PERFORMANCE
+%  ============================================================
+displayTyrePerformance( ...
+    TyreLoads, ...
+    TyrePerformance);
+
+calculateCombinedTyreLoads( ...
+    Derived, ...
+    LoadTransfer, ...
+    Lateral)
+%% ============================================================
+%  STAGE 2.6 - FRONT ARB SENSITIVITY STUDY
+%  ============================================================
+
+ARBSensitivity = frontARBSensitivityStudy( ...
+    Vehicle, ...
+    Setup, ...
+    Tyre, ...
+    Constants);
+
+
+%% ============================================================
+%  STAGE 3.1 - BICYCLE MODEL ARCHITECTURE
+%  ============================================================
+
+Bicycle = createBicycleModel( ...
+    Vehicle, ...
+    Operating);
+displayBicycleModel(Bicycle);
+
+
+%% ============================================================
+%  STAGE 3.2 - CORNERING STIFFNESS
+%  ============================================================
+
+Cornering = calculateCorneringStiffness( ...
+    TyreLoads, ...
+    Tyre);
+
+displayCorneringStiffness( ...
+    TyreLoads, ...
+    Cornering);
+
+%% ============================================================
+%  STAGE 3.3 - STEADY-STATE LATERAL RESPONSE
+%  ============================================================
+
+Response = calculateSteadyStateLateralResponse( ...
+    Bicycle, ...
+    Cornering);
+
+displayLateralResponse( ...
+    Response, ...
+    Bicycle);
+
+%% ============================================================
+%  STAGE 3.4 - VEHICLE BALANCE
+%  ============================================================
+
+Balance = calculateVehicleBalance( ...
+    Bicycle, ...
+    Cornering, ...
+    Response, ...
+    Constants);
+
+displayVehicleBalance( ...
+    Balance, ...
+    Bicycle, ...
+    Response);
